@@ -1,7 +1,7 @@
 /* Listo para mañana · Landing — Big Smile
    Edita CONFIG para cambiar precios, fechas de cada etapa y el enlace de compra. */
 const CONFIG = {
-  ctaUrl: '#oferta',            // ← pon aquí tu enlace de pago (Hotmart, Stripe, Mercado Pago…)
+  ctaUrl: 'https://pay.hotmart.com/R107890588D?bid=1791154086687',
   showCountdown: true,
   stages: [
     { name: 'Preventa',      price: '$349 MXN', end: '2026-10-31T23:59:00' },
