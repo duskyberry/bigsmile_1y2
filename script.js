@@ -1,12 +1,12 @@
 /* Listo para mañana · Landing — Big Smile
-   Edita CONFIG para cambiar precios, fechas de cada etapa y el enlace de compra. */
+   Edita CONFIG para cambiar precios y enlaces. El contador siempre marca 28 días y se reinicia al llegar a 27. */
 const CONFIG = {
   ctaUrl: 'https://pay.hotmart.com/R107890588D?bid=1791154086687',
+  moreProductsUrl: '#',
   showCountdown: true,
   stages: [
-    { name: 'Preventa',      price: '$349 MXN', end: '2026-10-31T23:59:00' },
-    { name: 'Lanzamiento',   price: '$449 MXN', end: '2026-11-30T23:59:00' },
-    { name: 'Precio normal', price: '$699 MXN', end: null }
+    { name: 'Promoción',     price: '$349 MXN', note: 'Por tiempo limitado' },
+    { name: 'Precio normal', price: '$699 MXN', note: 'Después' }
   ]
 };
 
@@ -15,10 +15,7 @@ const CONFIG = {
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 
   /* ---------- Precio por etapas + contador ---------- */
-  const fmt = d => new Date(d).toLocaleDateString('es-MX', { day: 'numeric', month: 'short' });
   const pad = n => String(n).padStart(2, '0');
-  const currentStage = now => { const i = CONFIG.stages.findIndex(s => !s.end || now < new Date(s.end).getTime()); return i < 0 ? CONFIG.stages.length - 1 : i; };
-  let lastStage = -1;
 
   function renderStages(cur) {
     const S = CONFIG.stages, last = S.length - 1;
@@ -34,23 +31,24 @@ const CONFIG = {
         <span style="font:800 9.5px Poppins;letter-spacing:.08em;text-transform:uppercase;min-height:12px;color:#A8CF45">${on ? 'HOY' : past ? 'Terminó' : ''}</span>
         <span style="font:700 11.5px/1.2 Poppins">${s.name}</span>
         <span style="font:900 clamp(15px,4.4vw,19px)/1.1 Poppins;text-decoration:${past ? 'line-through' : 'none'}">${s.price}</span>
-        <span style="font:600 10px Montserrat;opacity:.8">${s.end ? 'Hasta el ' + fmt(s.end) : 'Después'}</span></div>`;
+        <span style="font:600 10px Montserrat;opacity:.8">${s.note}</span></div>`;
     }).join('');
   }
+  renderStages(0);
 
   function tick() {
-    const now = Date.now(), cur = currentStage(now), S = CONFIG.stages;
-    if (cur !== lastStage) { renderStages(cur); lastStage = cur; }
+    const now = Date.now();
     const timer = $('#lp-timer');
-    const end = S[cur].end ? new Date(S[cur].end).getTime() : 0;
-    const left = Math.max(0, end - now);
-    if (timer) timer.style.display = CONFIG.showCountdown && cur < S.length - 1 && left > 0 ? '' : 'none';
+    // Siempre 28 días: al llegar a 27 vuelve a empezar en 28
+    const left = 28 * 864e5 + (864e5 - (now % 864e5)) - 1000;
+    if (timer) timer.style.display = CONFIG.showCountdown ? '' : 'none';
     const v = [Math.floor(left / 864e5), Math.floor(left / 36e5) % 24, Math.floor(left / 6e4) % 60, Math.floor(left / 1e3) % 60];
     $$('[data-t]').forEach(el => el.textContent = pad(v[+el.dataset.t]));
   }
   tick(); setInterval(tick, 1000);
 
   const cta = $('#lp-cta'); if (cta) cta.href = CONFIG.ctaUrl;
+  $$('.lp-more').forEach(a => a.href = CONFIG.moreProductsUrl);
 
   /* ---------- Calculadora de tiempo ---------- */
   const range = $('#lp-range');
