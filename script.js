@@ -1,7 +1,7 @@
 /* Listo para mañana · Landing — Big Smile
    Edita CONFIG para cambiar precios y enlaces. El contador siempre marca 28 días y se reinicia al llegar a 27. */
 const CONFIG = {
-  ctaUrl: 'https://pay.hotmart.com/R107890588D?bid=1791154086687',
+  ctaUrl: 'https://pay.hotmart.com/R107890588D?checkoutMode=2',
   moreProductsUrl: '#',
   showCountdown: true,
   stages: [
