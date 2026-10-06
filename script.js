@@ -1,54 +1,32 @@
 /* Listo para mañana · Landing — Big Smile
-   Edita CONFIG para cambiar precios y enlaces. El contador siempre marca 28 días y se reinicia al llegar a 27. */
+   Edita CONFIG para cambiar enlaces. El contador siempre marca 28 días y se reinicia al llegar a 27.
+   Precios: edítalos directo en index.html (busca "$349 MXN" y "$699 MXN"). */
 const CONFIG = {
   ctaUrl: 'https://pay.hotmart.com/R107890588D?checkoutMode=2',
   moreProductsUrl: '#',
-  showCountdown: true,
-  stages: [
-    { name: 'Promoción',     price: '$349 MXN', note: 'Por tiempo limitado' },
-    { name: 'Precio normal', price: '$699 MXN', note: 'Después' }
-  ]
+  showCountdown: true
 };
 
 (() => {
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  /* ---------- Precio por etapas + contador ---------- */
+  /* ---------- Enlaces ---------- */
+  $$('a.hotmart-fb').forEach(a => a.href = CONFIG.ctaUrl);
+  $$('.lp-more').forEach(a => a.href = CONFIG.moreProductsUrl);
+
+  /* ---------- Contador (siempre 28 días) ---------- */
   const pad = n => String(n).padStart(2, '0');
-
-  function renderStages(cur) {
-    const S = CONFIG.stages, last = S.length - 1;
-    $$('.lp-price').forEach(el => el.textContent = S[cur].price);
-    $$('.lp-stage').forEach(el => el.textContent = S[cur].name);
-    $$('.lp-next').forEach(el => el.textContent = cur < last ? S[cur + 1].price : '');
-    const old = $('#lp-old');
-    if (old) { old.style.display = cur < last ? '' : 'none'; const s = old.querySelector('span') || old; s.textContent = S[last].price; }
-    const box = $('#lp-stages');
-    if (box) box.innerHTML = S.map((s, i) => {
-      const on = i === cur, past = i < cur;
-      return `<div style="position:relative;border:${on ? '2px solid #201E1E' : '2px dashed #9C9696'};background:${on ? '#201E1E' : 'transparent'};color:${on ? '#F1F1F1' : past ? '#9C9696' : '#201E1E'};border-radius:16px;padding:12px 10px 10px;display:flex;flex-direction:column;gap:3px">
-        <span style="font:800 9.5px Poppins;letter-spacing:.08em;text-transform:uppercase;min-height:12px;color:#A8CF45">${on ? 'HOY' : past ? 'Terminó' : ''}</span>
-        <span style="font:700 11.5px/1.2 Poppins">${s.name}</span>
-        <span style="font:900 clamp(15px,4.4vw,19px)/1.1 Poppins;text-decoration:${past ? 'line-through' : 'none'}">${s.price}</span>
-        <span style="font:600 10px Montserrat;opacity:.8">${s.note}</span></div>`;
-    }).join('');
-  }
-  renderStages(0);
-
-  function tick() {
+  const timerBox = $('[data-t="0"]') && $('[data-t="0"]').closest('div[style*="border-radius:20px"]');
+  if (timerBox && !CONFIG.showCountdown) timerBox.style.display = 'none';
+  const tick = () => {
     const now = Date.now();
-    const timer = $('#lp-timer');
-    // Siempre 28 días: al llegar a 27 vuelve a empezar en 28
     const left = 28 * 864e5 + (864e5 - (now % 864e5)) - 1000;
-    if (timer) timer.style.display = CONFIG.showCountdown ? '' : 'none';
     const v = [Math.floor(left / 864e5), Math.floor(left / 36e5) % 24, Math.floor(left / 6e4) % 60, Math.floor(left / 1e3) % 60];
     $$('[data-t]').forEach(el => el.textContent = pad(v[+el.dataset.t]));
-  }
+  };
   tick(); setInterval(tick, 1000);
-
-  const cta = $('#lp-cta'); if (cta) cta.href = CONFIG.ctaUrl;
-  $$('.lp-more').forEach(a => a.href = CONFIG.moreProductsUrl);
 
   /* ---------- Calculadora de tiempo ---------- */
   const range = $('#lp-range');
@@ -58,20 +36,31 @@ const CONFIG = {
   };
   if (range) { range.addEventListener('input', calc); calc(); }
 
-  /* ---------- Preguntas (acordeón) ---------- */
-  let open = 0;
-  const setFaq = () => $$('[data-faq]').forEach(b => {
-    const i = +b.dataset.faq, on = i === open;
-    b.setAttribute('aria-expanded', on);
-    const a = $(`[data-faq-a="${i}"]`), ic = $(`[data-faq-i="${i}"]`);
-    if (a) a.style.gridTemplateRows = on ? '1fr' : '0fr';
-    if (ic) ic.style.transform = on ? 'rotate(45deg)' : 'none';
+  /* ---------- Acordeones (secciones del toolkit y preguntas) ---------- */
+  const groups = {};
+  $$('[data-acc]').forEach(b => (groups[b.dataset.acc] = groups[b.dataset.acc] || []).push(b));
+  Object.values(groups).forEach(btns => {
+    const panel = b => b.nextElementSibling;
+    const icon = b => b.lastElementChild;
+    let open = btns.findIndex(b => panel(b) && panel(b).style.gridTemplateRows === '1fr');
+    const set = () => btns.forEach((b, i) => {
+      const on = i === open;
+      b.setAttribute('aria-expanded', on);
+      if (panel(b)) panel(b).style.gridTemplateRows = on ? '1fr' : '0fr';
+      if (icon(b)) icon(b).style.transform = on ? 'rotate(45deg)' : 'none';
+    });
+    btns.forEach((b, i) => b.addEventListener('click', () => { open = open === i ? -1 : i; set(); }));
+    set();
   });
-  $$('[data-faq]').forEach(b => b.addEventListener('click', () => { const i = +b.dataset.faq; open = open === i ? -1 : i; setFaq(); }));
-  setFaq();
+
+  /* ---------- Hover ---------- */
+  $$('[data-hover]').forEach(el => {
+    const base = el.getAttribute('style') || '';
+    el.addEventListener('mouseenter', () => el.setAttribute('style', base + ';' + el.dataset.hover));
+    el.addEventListener('mouseleave', () => el.setAttribute('style', base));
+  });
 
   /* ---------- Animaciones ---------- */
-  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
   $$('[data-anim]').forEach(el => { if (!reduce) el.style.animation = el.dataset.anim; });
 
   const reveal = $$('[data-r]');
